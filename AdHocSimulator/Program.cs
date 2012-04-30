@@ -21,7 +21,7 @@ namespace grapeot.AdHocSimulator
             var defaultReceivedHandler = new EventHandler<DataReceivedEventArgs>((sender, e) =>
             {
                 var device = sender as Device;
-                Console.WriteLine("Data received from {0} to {1}.", device.Name, e.TagretDevice.Name);
+                Console.WriteLine("Data received from {0} to {1}.", e.FromDevice.Name, device.Name);
             });
             d1.DataReceived += defaultReceivedHandler;
             d2.DataReceived += defaultReceivedHandler;

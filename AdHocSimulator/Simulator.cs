@@ -168,7 +168,7 @@ namespace grapeot.AdHocSimulator
         /// <param name="from">The device from which the data is sent.</param>
         /// <param name="to">The target device</param>
         /// <param name="data">The data.</param>
-        public void Send(Device from, Device to, byte[] data, EventHandler<DataReceivedEventArgs> callback)
+        public void Send(Device from, Device to, byte[] data, Action callback, EventHandler<DataReceivedEventArgs> dataReceivedTrigger)
         {
             // check whether the two devices are connected.
             if (!AdjacentList[from.ID].Contains(to.ID))
@@ -193,10 +193,11 @@ namespace grapeot.AdHocSimulator
                 for (int i = 0; i < buffer.Length; i++)
                     buffer[i] = queue.Dequeue();
                 // trigger the event
-                callback(to, new DataReceivedEventArgs() { FromDevice = from, Data = buffer });
+                dataReceivedTrigger(to, new DataReceivedEventArgs() { FromDevice = from, Data = buffer });
                 // dispose the timer when all the data is sent.
                 if (queue.Count == 0)
                 {
+                    callback();
                     timer.Dispose();
                     sendingIds.Remove(to.ID);
                 }

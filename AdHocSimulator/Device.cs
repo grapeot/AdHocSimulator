@@ -53,7 +53,13 @@ namespace grapeot.AdHocSimulator
         /// <param name="callback">The callback which will be invoked when data sending is finished.</param>
         public void Send(Device target, byte[] data, Action callback = null)
         {
-            Simulator.Send(this, target, data, callback);
+            Simulator.Send(this, target, data, callback, TriggerDataReceivedEvent);
+        }
+
+        void TriggerDataReceivedEvent(object sender, DataReceivedEventArgs e)
+        {
+            if (DataReceived != null)
+                DataReceived(sender, e);
         }
         #endregion
     }
