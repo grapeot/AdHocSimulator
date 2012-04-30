@@ -197,7 +197,7 @@ namespace grapeot.AdHocSimulator
                 // dispose the timer when all the data is sent.
                 if (queue.Count == 0)
                 {
-                    callback();
+                    if (callback != null) callback();
                     timer.Dispose();
                     sendingIds.Remove(to.ID);
                 }
