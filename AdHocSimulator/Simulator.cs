@@ -20,6 +20,11 @@ namespace grapeot.AdHocSimulator
         public long SimulationInterval { get; set; }
 
         /// <summary>
+        /// Indicate the next available ID.
+        /// </summary>
+        int nextId = 0;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Simulator"/> class
         /// with the default MaxNetworkSpeed.
         /// </summary>
@@ -31,29 +36,37 @@ namespace grapeot.AdHocSimulator
 
         #region Adjacency APIs
         List<int> activeIds = new List<int>();
-        List<Tuple<int, int>> adjacentList = new List<Tuple<int, int>>();
+        Dictionary<int, List<int>> adjacentList = new Dictionary<int, List<int>>();
 
         /// <summary>
         /// Gets the adjacent list, which shows how the devices can reach each other.
         /// </summary>
         /// <value>The adjacent list.</value>
-        public List<Tuple<int, int>> AdjacentList { get { return adjacentList; } }
+        public Dictionary<int, List<int>> AdjacentList { get { return adjacentList; } }
 
         /// <summary>
-        /// Connects the specified devices.
+        /// Connects the specified devices. Note we assume all the connections are symmetric.
         /// </summary>
         /// <param name="id1">The id1.</param>
         /// <param name="id2">The id2.</param>
         public void Connect(int id1, int id2)
-        { }
+        {
+            AdjacentList[id1].Add(id2);
+            AdjacentList[id2].Add(id1);
+        }
 
         /// <summary>
-        /// Connects the specified devices.
+        /// Connects the specified devices. We assume all the connections are symmetric.
         /// </summary>
         /// <param name="id1">The id1.</param>
         /// <param name="id2">The id2.</param>
         public void Connect(int[] ids1, int[] ids2)
-        { }
+        {
+            if (ids1.Length != ids2.Length)
+                throw new Exception("The two id arrays are expected to have the same length.");
+            for (int i = 0; i < ids2.Length; i++)
+                Connect(ids1[i], ids2[i]);
+        }
 
         /// <summary>
         /// Disconnects the specified devices.
@@ -61,7 +74,17 @@ namespace grapeot.AdHocSimulator
         /// <param name="id1">The id1.</param>
         /// <param name="id2">The id2.</param>
         public void Disconnect(int id1, int id2)
-        { }
+        {
+            if (AdjacentList[id1].Contains(id2) && AdjacentList[id2].Contains(id1))
+            {
+                AdjacentList[id1].Remove(id2);
+                AdjacentList[id2].Remove(id1);
+            }
+            else
+            {
+                throw new Exception("The specified devices are not connected.");
+            }
+        }
 
         /// <summary>
         /// Disconnects the specified devices.
@@ -69,11 +92,17 @@ namespace grapeot.AdHocSimulator
         /// <param name="id1">The id1.</param>
         /// <param name="id2">The id2.</param>
         public void Disconnect(int[] ids1, int[] ids2)
-        { }
+        {
+            if (ids1.Length != ids2.Length)
+                throw new Exception("The two id arrays are expected to have the same length.");
+            for (int i = 0; i < ids2.Length; i++)
+                Disconnect(ids1[i], ids2[i]);
+        }
         #endregion
 
         #region Device APIs
-        List<Device> devices;
+        List<Device> devices = new List<Device>();
+
         /// <summary>
         /// Gets the device list.
         /// </summary>
@@ -88,7 +117,13 @@ namespace grapeot.AdHocSimulator
         /// <returns>Assigned ID to the device</returns>
         public int Register(Device d, int[] connectedIds)
         {
-            throw new NotImplementedException();
+            devices.Add(d);
+            activeIds.Add(nextId);
+            AdjacentList.Add(nextId, new List<int>());
+            if (connectedIds != null)
+                foreach (var id in connectedIds)
+                    Connect(nextId, id);
+            return nextId++;
         }
 
         /// <summary>
@@ -96,7 +131,24 @@ namespace grapeot.AdHocSimulator
         /// </summary>
         /// <param name="d">The d.</param>
         public void Leave(Device d)
-        { }
+        {
+            devices.Remove(d);
+            activeIds.Remove(d.ID);
+            AdjacentList.Remove(d.ID);  //Directly disconnect all the neighbors.
+            // note the connections are symmetric. Do another round.
+            foreach (var key in AdjacentList.Keys)
+                if (AdjacentList[key].Contains(d.ID))
+                    AdjacentList[key].Remove(d.ID);
+        }
+
+        /// <summary>
+        /// Gets the nearby devices.
+        /// </summary>
+        /// <returns></returns>
+        public List<int> GetNearbyDevices(int id)
+        {
+            return AdjacentList[id];
+        }
         #endregion
     }
 }
