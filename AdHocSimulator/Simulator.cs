@@ -155,7 +155,8 @@ namespace grapeot.AdHocSimulator
         #endregion
 
         #region Data APIs
-        Dictionary<int, Queue<byte>> dataToSend = new Dictionary<int, Queue<byte>>();
+        Dictionary<int, Queue<Queue<byte>>> dataToSend = new Dictionary<int, Queue<Queue<byte>>>();
+        Dictionary<int, Queue<Action>> callbacks = new Dictionary<int, Queue<Action>>();
 
         /// <summary>
         /// A set for the devices receiving data (i.e. having timer running).
@@ -174,12 +175,13 @@ namespace grapeot.AdHocSimulator
             if (!AdjacentList[from.ID].Contains(to.ID))
                 throw new Exception("The two devices are not connected.");
 
-            // prepare for the buffer 
+            // prepare for the buffer and callback queue
             if (!dataToSend.ContainsKey(to.ID))
-                dataToSend.Add(to.ID, new Queue<byte>(data));
-            else
-                foreach (var b in data)
-                    dataToSend[to.ID].Enqueue(b);
+                dataToSend.Add(to.ID, new Queue<Queue<byte>>());
+            dataToSend[to.ID].Enqueue(new Queue<byte>(data));
+            if (!callbacks.ContainsKey(to.ID))
+                callbacks.Add(to.ID, new Queue<Action>());
+            callbacks[to.ID].Enqueue(callback);
 
             // Set a time to trigger the data received events.
             if (sendingIds.Contains(to.ID)) return;
@@ -188,7 +190,7 @@ namespace grapeot.AdHocSimulator
             timer.Elapsed += (sender, e) =>
             {
                 // use closure to access the target device
-                var queue = dataToSend[to.ID];
+                var queue = dataToSend[to.ID].Peek();
                 var buffer = new byte[Math.Min(this.MaxNetworkSpeed, queue.Count)];
                 for (int i = 0; i < buffer.Length; i++)
                     buffer[i] = queue.Dequeue();
@@ -197,9 +199,14 @@ namespace grapeot.AdHocSimulator
                 // dispose the timer when all the data is sent.
                 if (queue.Count == 0)
                 {
-                    if (callback != null) callback();
-                    timer.Dispose();
-                    sendingIds.Remove(to.ID);
+                    var toCallBack = callbacks[to.ID].Dequeue();
+                    if (toCallBack != null) toCallBack();
+                    dataToSend[to.ID].Dequeue();
+                    if (dataToSend[to.ID].Count == 0)
+                    {
+                        timer.Dispose();
+                        sendingIds.Remove(to.ID);
+                    }
                 }
             };
             timer.Enabled = true;
