@@ -8,10 +8,19 @@ namespace grapeot.AdHocSimulator
     public class Simulator
     {
         /// <summary>
-        /// Gets or sets the max network speed.
+        /// Gets or sets the max network speed, in the unit of byte per second.
         /// </summary>
         /// <value>The max network speed.</value>
-        public int MaxNetworkSpeed { get; set; }
+        public long MaxNetworkSpeed { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Simulator"/> class
+        /// with the default MaxNetworkSpeed.
+        /// </summary>
+        public Simulator()
+        {
+            MaxNetworkSpeed = 10 << 10;
+        }
 
         #region Adjacency APIs
         List<int> activeIds = new List<int>();

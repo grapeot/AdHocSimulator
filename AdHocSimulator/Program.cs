@@ -9,6 +9,7 @@ namespace grapeot.AdHocSimulator
     {
         static void Main(string[] args)
         {
+            
         }
     }
 }
