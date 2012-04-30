@@ -37,14 +37,15 @@ namespace grapeot.AdHocSimulator
         /// Gets the nearby devices.
         /// </summary>
         /// <value>The nearby devices.</value>
-        public Device[] NearbyDevices { get; }
+        public Device[] NearbyDevices { get { throw new NotImplementedException(); } }
 
         /// <summary>
         /// Sends the specified data.
         /// </summary>
+        /// <param name="target">The target device.</param>
         /// <param name="data">The data.</param>
         /// <param name="callback">The callback which will be invoked when data sending is finished.</param>
-        public void Send(byte[] data, Action callback = null)
+        public void Send(Device target, byte[] data, Action callback = null)
         {
             if (callback != null)
                 callback();
@@ -57,6 +58,16 @@ namespace grapeot.AdHocSimulator
     /// </summary>
     public class DataReceivedEventArgs: EventArgs
     {
+        /// <summary>
+        /// Gets or sets the data.
+        /// </summary>
+        /// <value>The data.</value>
         public byte[] Data { get; set; }
+
+        /// <summary>
+        /// Gets or sets the tagret device.
+        /// </summary>
+        /// <value>The tagret device.</value>
+        public Device TagretDevice { get; set; }
     }
 }

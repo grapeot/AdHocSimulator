@@ -14,12 +14,19 @@ namespace grapeot.AdHocSimulator
         public long MaxNetworkSpeed { get; set; }
 
         /// <summary>
+        /// Gets or sets the simulation interval, in the unit of millisecond.
+        /// </summary>
+        /// <value>The simulation interval.</value>
+        public long SimulationInterval { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Simulator"/> class
         /// with the default MaxNetworkSpeed.
         /// </summary>
         public Simulator()
         {
             MaxNetworkSpeed = 10 << 10;
+            SimulationInterval = 500;
         }
 
         #region Adjacency APIs
@@ -62,7 +69,7 @@ namespace grapeot.AdHocSimulator
         /// <param name="id1">The id1.</param>
         /// <param name="id2">The id2.</param>
         public void Disconnect(int[] ids1, int[] ids2)
-        { } 
+        { }
         #endregion
 
         #region Device APIs
@@ -71,7 +78,7 @@ namespace grapeot.AdHocSimulator
         /// Gets the device list.
         /// </summary>
         /// <value>The devices.</value>
-        public List<Device> Devices { get; }
+        public List<Device> Devices { get { return devices; } }
 
         /// <summary>
         /// Registers the specified device in the network.
@@ -89,7 +96,7 @@ namespace grapeot.AdHocSimulator
         /// </summary>
         /// <param name="d">The d.</param>
         public void Leave(Device d)
-        { } 
+        { }
         #endregion
     }
 }
