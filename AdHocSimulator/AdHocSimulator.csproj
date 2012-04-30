@@ -8,7 +8,7 @@
     <ProjectGuid>{8CC21A8A-FF95-412B-9FA4-796873C5998F}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>AdHocSimulator</RootNamespace>
+    <RootNamespace>grapeot.AdHocSimulator</RootNamespace>
     <AssemblyName>AdHocSimulator</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Device.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
