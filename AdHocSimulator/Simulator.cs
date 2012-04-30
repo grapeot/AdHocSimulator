@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Timers;
 
 namespace grapeot.AdHocSimulator
 {
     public class Simulator
     {
         /// <summary>
-        /// Gets or sets the max network speed, in the unit of byte per second.
+        /// Gets or sets the max network speed (per SimulationInterval).
         /// </summary>
         /// <value>The max network speed.</value>
         public long MaxNetworkSpeed { get; set; }
@@ -115,15 +116,17 @@ namespace grapeot.AdHocSimulator
         /// <param name="d">The d.</param>
         /// <param name="connectedIds">The connected ids.</param>
         /// <returns>Assigned ID to the device</returns>
-        public int Register(Device d, int[] connectedIds)
+        public void Register(Device d, int[] connectedIds)
         {
             devices.Add(d);
             activeIds.Add(nextId);
+            d.ID = nextId;
+            d.Simulator = this;
             AdjacentList.Add(nextId, new List<int>());
             if (connectedIds != null)
                 foreach (var id in connectedIds)
                     Connect(nextId, id);
-            return nextId++;
+            ++nextId;
         }
 
         /// <summary>
@@ -145,9 +148,60 @@ namespace grapeot.AdHocSimulator
         /// Gets the nearby devices.
         /// </summary>
         /// <returns></returns>
-        public List<int> GetNearbyDevices(int id)
+        public int[] GetNearbyDevices(int id)
         {
-            return AdjacentList[id];
+            return AdjacentList[id].ToArray();
+        }
+        #endregion
+
+        #region Data APIs
+        Dictionary<int, Queue<byte>> dataToSend = new Dictionary<int, Queue<byte>>();
+
+        /// <summary>
+        /// A set for the devices receiving data (i.e. having timer running).
+        /// </summary>
+        HashSet<int> sendingIds = new HashSet<int>();
+
+        /// <summary>
+        /// Sends the specified data from a device to another.
+        /// </summary>
+        /// <param name="from">The device from which the data is sent.</param>
+        /// <param name="to">The target device</param>
+        /// <param name="data">The data.</param>
+        public void Send(Device from, Device to, byte[] data, EventHandler<DataReceivedEventArgs> callback)
+        {
+            // check whether the two devices are connected.
+            if (!AdjacentList[from.ID].Contains(to.ID))
+                throw new Exception("The two devices are not connected.");
+
+            // prepare for the buffer 
+            if (!dataToSend.ContainsKey(to.ID))
+                dataToSend.Add(to.ID, new Queue<byte>(data));
+            else
+                foreach (var b in data)
+                    dataToSend[to.ID].Enqueue(b);
+
+            // Set a time to trigger the data received events.
+            if (sendingIds.Contains(to.ID)) return;
+            sendingIds.Add(to.ID);
+            var timer = new Timer(this.SimulationInterval) { AutoReset = true };
+            timer.Elapsed += (sender, e) =>
+            {
+                // use closure to access the target device
+                var queue = dataToSend[to.ID];
+                var buffer = new byte[Math.Min(this.MaxNetworkSpeed, queue.Count)];
+                for (int i = 0; i < buffer.Length; i++)
+                    buffer[i] = queue.Dequeue();
+                // trigger the event
+                callback(to, new DataReceivedEventArgs() { FromDevice = from, Data = buffer });
+                // dispose the timer when all the data is sent.
+                if (queue.Count == 0)
+                {
+                    timer.Dispose();
+                    sendingIds.Remove(to.ID);
+                }
+            };
+            timer.Enabled = true;
         }
         #endregion
     }

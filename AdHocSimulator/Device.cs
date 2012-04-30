@@ -23,6 +23,12 @@ namespace grapeot.AdHocSimulator
         public string Name { get; set; }
 
         /// <summary>
+        /// Gets or sets the simulator associated with the device.
+        /// </summary>
+        /// <value>The simulator.</value>
+        public Simulator Simulator { get; set; }
+
+        /// <summary>
         /// Occurs when there is data received. Note due to the network limitation, the data may be incomplete,
         /// therefore it's Devices' responsibility to do buffer stuffs.
         /// </summary>
@@ -37,18 +43,17 @@ namespace grapeot.AdHocSimulator
         /// Gets the nearby devices.
         /// </summary>
         /// <value>The nearby devices.</value>
-        public Device[] NearbyDevices { get { throw new NotImplementedException(); } }
+        public int[] NearbyDevices { get { return Simulator.GetNearbyDevices(this.ID); } }
 
         /// <summary>
-        /// Sends the specified data.
+        /// Sends the specified data to the target device.
         /// </summary>
         /// <param name="target">The target device.</param>
         /// <param name="data">The data.</param>
         /// <param name="callback">The callback which will be invoked when data sending is finished.</param>
         public void Send(Device target, byte[] data, Action callback = null)
         {
-            if (callback != null)
-                callback();
+            Simulator.Send(this, target, data, callback);
         }
         #endregion
     }
@@ -56,7 +61,7 @@ namespace grapeot.AdHocSimulator
     /// <summary>
     /// Event arguments for Device.DataReceived.
     /// </summary>
-    public class DataReceivedEventArgs: EventArgs
+    public class DataReceivedEventArgs : EventArgs
     {
         /// <summary>
         /// Gets or sets the data.
@@ -65,9 +70,9 @@ namespace grapeot.AdHocSimulator
         public byte[] Data { get; set; }
 
         /// <summary>
-        /// Gets or sets the tagret device.
+        /// Gets or sets the device from which the data is sent.
         /// </summary>
-        /// <value>The tagret device.</value>
-        public Device TagretDevice { get; set; }
+        /// <value>From device.</value>
+        public Device FromDevice { get; set; }
     }
 }
