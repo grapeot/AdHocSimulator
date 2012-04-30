@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Windows.Forms;
 
 namespace grapeot.AdHocSimulator
 {
@@ -28,6 +30,7 @@ namespace grapeot.AdHocSimulator
 
             // test send a large data
             d1.Send(d2, new byte[20 << 10], () => { Console.WriteLine("Data sent complete from D1 to D2"); });
+            Application.Run();
         }
     }
 }
