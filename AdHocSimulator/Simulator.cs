@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Timers;
+using System.Threading;
 
 namespace grapeot.AdHocSimulator
 {
@@ -157,6 +158,7 @@ namespace grapeot.AdHocSimulator
         #region Data APIs
         Dictionary<int, Queue<Queue<byte>>> dataToSend = new Dictionary<int, Queue<Queue<byte>>>();
         Dictionary<int, Queue<Action>> callbacks = new Dictionary<int, Queue<Action>>();
+        Dictionary<int, Queue<Device>> sourceDevices = new Dictionary<int, Queue<Device>>();
 
         /// <summary>
         /// A set for the devices receiving data (i.e. having timer running).
@@ -169,24 +171,31 @@ namespace grapeot.AdHocSimulator
         /// <param name="from">The device from which the data is sent.</param>
         /// <param name="to">The target device</param>
         /// <param name="data">The data.</param>
+        /// <remarks>
+        /// This function also force the network speed limit. Currently the limit is put
+        /// in the capability of receiving data for every device.
+        /// </remarks>
         public void Send(Device from, Device to, byte[] data, Action callback, EventHandler<DataReceivedEventArgs> dataReceivedTrigger)
         {
             // check whether the two devices are connected.
             if (!AdjacentList[from.ID].Contains(to.ID))
                 throw new Exception("The two devices are not connected.");
 
-            // prepare for the buffer and callback queue
+            // prepare for the buffer,callback queue, and sourceDevice queue
             if (!dataToSend.ContainsKey(to.ID))
                 dataToSend.Add(to.ID, new Queue<Queue<byte>>());
             dataToSend[to.ID].Enqueue(new Queue<byte>(data));
             if (!callbacks.ContainsKey(to.ID))
                 callbacks.Add(to.ID, new Queue<Action>());
             callbacks[to.ID].Enqueue(callback);
+            if (!sourceDevices.ContainsKey(to.ID))
+                sourceDevices.Add(to.ID, new Queue<Device>());
+            sourceDevices[to.ID].Enqueue(from);
 
             // Set a time to trigger the data received events.
             if (sendingIds.Contains(to.ID)) return;
             sendingIds.Add(to.ID);
-            var timer = new Timer(this.SimulationInterval) { AutoReset = true };
+            var timer = new System.Timers.Timer(this.SimulationInterval) { AutoReset = true };
             timer.Elapsed += (sender, e) =>
             {
                 // use closure to access the target device
@@ -195,18 +204,20 @@ namespace grapeot.AdHocSimulator
                 for (int i = 0; i < buffer.Length; i++)
                     buffer[i] = queue.Dequeue();
                 // trigger the event
-                dataReceivedTrigger(to, new DataReceivedEventArgs() { FromDevice = from, Data = buffer });
+                var sourceDevice = sourceDevices[to.ID].Peek();
+                dataReceivedTrigger(to, new DataReceivedEventArgs() { SourceDevice = sourceDevice, Data = buffer });
                 // dispose the timer when all the data is sent.
                 if (queue.Count == 0)
                 {
-                    var toCallBack = callbacks[to.ID].Dequeue();
-                    if (toCallBack != null) toCallBack();
-                    dataToSend[to.ID].Dequeue();
                     if (dataToSend[to.ID].Count == 0)
                     {
                         timer.Dispose();
                         sendingIds.Remove(to.ID);
                     }
+                    sourceDevices[to.ID].Dequeue();
+                    var toCallBack = callbacks[to.ID].Dequeue();
+                    if (toCallBack != null) toCallBack();
+                    dataToSend[to.ID].Dequeue();
                 }
             };
             timer.Enabled = true;

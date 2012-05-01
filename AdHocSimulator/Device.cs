@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace grapeot.AdHocSimulator
 {
@@ -51,11 +52,25 @@ namespace grapeot.AdHocSimulator
         /// <param name="target">The target device.</param>
         /// <param name="data">The data.</param>
         /// <param name="callback">The callback which will be invoked when data sending is finished.</param>
-        public void Send(Device target, byte[] data, Action callback = null)
+        public void Send(Device target, byte[] data, bool isBlocked = false, Action callback = null)
         {
-            Simulator.Send(this, target, data, callback, TriggerDataReceivedEvent);
+            if (isBlocked)
+            {
+                var e = new AutoResetEvent(false);
+                Simulator.Send(this, target, data, () => { if (callback != null) callback(); e.Set(); }, TriggerDataReceivedEvent);
+                e.WaitOne();
+            }
+            else
+            {
+                Simulator.Send(this, target, data, callback, TriggerDataReceivedEvent);
+            }
         }
 
+        /// <summary>
+        /// Triggers the data received event, for the simulator callback use.
+        /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The <see cref="grapeot.AdHocSimulator.DataReceivedEventArgs"/> instance containing the event data.</param>
         void TriggerDataReceivedEvent(object sender, DataReceivedEventArgs e)
         {
             if (DataReceived != null)
@@ -79,6 +94,6 @@ namespace grapeot.AdHocSimulator
         /// Gets or sets the device from which the data is sent.
         /// </summary>
         /// <value>From device.</value>
-        public Device FromDevice { get; set; }
+        public Device SourceDevice { get; set; }
     }
 }

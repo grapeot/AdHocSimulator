@@ -23,34 +23,34 @@ namespace grapeot.AdHocSimulator
             var defaultReceivedHandler = new EventHandler<DataReceivedEventArgs>((sender, e) =>
             {
                 var device = sender as Device;
-                Console.WriteLine("Data received from {0} to {1}.", e.FromDevice.Name, device.Name);
+                Console.WriteLine("Data received from {0} to {1}.", e.SourceDevice.Name, device.Name);
             });
             d1.DataReceived += defaultReceivedHandler;
             d2.DataReceived += defaultReceivedHandler;
 
-            // test send a large data
-            d1.Send(d2, new byte[20 << 10], () => { Console.WriteLine("Data sent complete from D1 to D2"); });
+            // test send a large bulk of data
+            d1.Send(d2, new byte[20 << 10], true, () => { Console.WriteLine("Data sent complete from D1 to D2"); });
+            Console.WriteLine("Block point reached.");
 
             // perform another round
             var d3 = new Device { Name = "D3" };
-            simulator.Register(d3, new int[]{d1.ID, d2.ID});
+            simulator.Register(d3, new int[] { d1.ID, d2.ID });
             d3.DataReceived += defaultReceivedHandler;
-            d3.Send(d2, new byte[20 << 10], () => { 
-                Console.WriteLine("Data sent complete from D3 to D2");
-                // d1 leaves the network, and then try to send it some data
-                simulator.Leave(d1);
-                try
-                {
-                    d3.Send(d1, new byte[10]);
-                }
-                catch (Exception e)
-                {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.WriteLine("Error: " + e.Message);
-                    Console.ForegroundColor = ConsoleColor.Gray;
-                }
-            });
+            d3.Send(d2, new byte[20 << 10], false, () => { Console.WriteLine("Data sent complete from D3 to D2"); });
+            d3.Send(d1, new byte[20 << 10], true, () => { Console.WriteLine("Data sent complete from D3 to D1"); });
 
+            // d1 leaves the network, and then try to send it some data
+            simulator.Leave(d1);
+            try
+            {
+                d3.Send(d1, new byte[10]);
+            }
+            catch (Exception e)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("Error: " + e.Message);
+                Console.ForegroundColor = ConsoleColor.Gray;
+            }
             Application.Run();
         }
     }
